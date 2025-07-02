@@ -10,29 +10,4 @@
 html {
   font-size: 62.5%;
 }
-/* 1rem = 10px */
-
-/* Responsive font size adjustments */
-@media only screen and (max-width: 480px) {
-  html {
-    font-size: 55%; /* 1rem = 8.8px */
-  }
-}
-
-@media only screen and (min-width: 481px) and (max-width: 768px) {
-  html {
-    font-size: 58%; /* 1rem = 9.3px */
-  }
-}
-
-@media only screen and (min-width: 769px) and (max-width: 1024px) {
-  html {
-    font-size: 60%; /* 1rem = 9.6px */
-  }
-}
-
-@media only screen and (max-height: 600px) and (orientation: landscape) {
-  html {
-    font-size: 50%; /* 1rem = 8px for landscape mobile */
-  }
-}
+/* 1rem = 10px*/
