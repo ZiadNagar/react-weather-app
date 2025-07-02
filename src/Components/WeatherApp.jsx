@@ -15,13 +15,10 @@ const WeatherApp = () => {
   const [error, setError] = useState(null);
   const api_key = import.meta.env.VITE_WEATHER_API_KEY;
 
-  // Debug logging
+  // Check API key availability
   useEffect(() => {
-    console.log("API Key exists:", !!api_key);
-    console.log("Environment:", import.meta.env.MODE);
     if (!api_key) {
       setError("API key not found. Please check your environment variables.");
-      console.error("VITE_WEATHER_API_KEY is not set");
     }
   }, [api_key]);
 
@@ -46,19 +43,14 @@ const WeatherApp = () => {
               const res = await fetch(url);
               const defaultData = await res.json();
               setData(defaultData);
-            } catch (error) {
-              console.error(
-                "Error fetching weather for current location:",
-                error
-              );
+            } catch {
               // Fallback to Alexandria if API fails
               await fetchFallbackWeather();
             }
             setLoading(false);
           },
-          async (error) => {
+          async () => {
             // Error or permission denied: Use fallback location
-            console.log("Geolocation error:", error.message);
             await fetchFallbackWeather();
             setLoading(false);
           },
@@ -70,7 +62,6 @@ const WeatherApp = () => {
         );
       } else {
         // Geolocation not supported: Use fallback location
-        console.log("Geolocation is not supported by this browser.");
         await fetchFallbackWeather();
         setLoading(false);
       }
@@ -83,8 +74,7 @@ const WeatherApp = () => {
         const res = await fetch(url);
         const defaultData = await res.json();
         setData(defaultData);
-      } catch (error) {
-        console.error("Error fetching fallback weather:", error);
+      } catch {
         setData({ notFound: true });
       }
     };
@@ -119,8 +109,7 @@ const WeatherApp = () => {
       setSuggestions(formattedSuggestions);
       setShowSuggestions(true);
       setSelectedSuggestionIndex(-1);
-    } catch (error) {
-      console.error("Error fetching suggestions:", error);
+    } catch {
       setSuggestions([]);
       setShowSuggestions(false);
       setSelectedSuggestionIndex(-1);
