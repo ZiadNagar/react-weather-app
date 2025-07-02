@@ -15,7 +15,7 @@ A modern, responsive weather application built with React and Vite that provides
 
 ## 🚀 Live Demo
 
-Check out the live demo: [Weather App](https://ziadnagar.github.io/weather-app/)
+Check out the live demo: [Weather App](https://zezo-weather-app.vercel.app/)
 
 ## 🛠️ Technologies Used
 
