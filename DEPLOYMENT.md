@@ -13,9 +13,32 @@
 
 #### Issue: Page shows 404 or blank screen
 **Solution:**
-1. Verify the base path in `vite.config.js` matches your repository name
-2. Check if the deployment succeeded in the Actions tab
-3. Ensure Pages is set to deploy from GitHub Actions (not branch)
+1. **Check GitHub Pages Settings:**
+   - Go to Settings → Pages
+   - Source MUST be "GitHub Actions" (not "Deploy from a branch")
+   - If it shows "Deploy from a branch", change it to "GitHub Actions"
+
+2. **Verify API Key in GitHub Secrets:**
+   - Go to Settings → Secrets and variables → Actions
+   - Ensure `VITE_WEATHER_API_KEY` secret exists and has your OpenWeatherMap API key
+
+3. **Check the deployment logs:**
+   - Go to Actions tab in your repository
+   - Click on the latest "Deploy to GitHub Pages" workflow
+   - Check for any build or deployment errors
+
+4. **Test locally first:**
+   ```bash
+   # Build and test locally
+   npm run build
+   npm run preview
+   # Should work at http://localhost:4173/react-weather-app/
+   ```
+
+5. **Check browser console:**
+   - Open developer tools (F12)
+   - Look for JavaScript errors or failed network requests
+   - Check if API key error message appears
 
 #### Issue: API requests fail on deployed site
 **Solution:**
