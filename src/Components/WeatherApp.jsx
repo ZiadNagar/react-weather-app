@@ -137,14 +137,20 @@ const WeatherApp = () => {
     setLocation(suggestion.displayName);
     setShowSuggestions(false);
     setSuggestions([]);
+    setError(null);
 
     setLoading(true);
     try {
       const url = `https://api.openweathermap.org/data/2.5/weather?lat=${suggestion.lat}&lon=${suggestion.lon}&units=Metric&appid=${api_key}`;
       const res = await fetch(url);
       const weatherData = await res.json();
-      setData(weatherData);
-      setLocation("");
+
+      if (weatherData.cod !== 200) {
+        setData({ notFound: true });
+      } else {
+        setData(weatherData);
+        setLocation("");
+      }
     } catch (error) {
       console.error("Error fetching weather data:", error);
       setData({ notFound: true });
@@ -157,15 +163,24 @@ const WeatherApp = () => {
       setLoading(true);
       setShowSuggestions(false);
       setSelectedSuggestionIndex(-1);
-      const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=Metric&appid=${api_key}`;
-      const res = await fetch(url);
-      const searchData = await res.json();
-      if (searchData.cod !== 200) {
+      setError(null);
+
+      try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=Metric&appid=${api_key}`;
+        const res = await fetch(url);
+        const searchData = await res.json();
+
+        if (searchData.cod !== 200) {
+          setData({ notFound: true });
+        } else {
+          setData(searchData);
+          setLocation("");
+        }
+      } catch (error) {
+        console.error("Error fetching weather data:", error);
         setData({ notFound: true });
-      } else {
-        setData(searchData);
-        setLocation("");
       }
+
       setLoading(false);
     }
   };
