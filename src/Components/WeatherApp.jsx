@@ -12,10 +12,27 @@ const WeatherApp = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [error, setError] = useState(null);
   const api_key = import.meta.env.VITE_WEATHER_API_KEY;
+
+  // Debug logging
+  useEffect(() => {
+    console.log("API Key exists:", !!api_key);
+    console.log("Environment:", import.meta.env.MODE);
+    if (!api_key) {
+      setError("API key not found. Please check your environment variables.");
+      console.error("VITE_WEATHER_API_KEY is not set");
+    }
+  }, [api_key]);
 
   useEffect(() => {
     const fetchDefaultWeather = async () => {
+      // Don't fetch if API key is missing
+      if (!api_key) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
 
       // Try to get user's current location
@@ -305,6 +322,11 @@ const WeatherApp = () => {
         </div>
         {loading ? (
           <img className="loader" src={loadingGif} alt="loading" />
+        ) : error ? (
+          <div className="not-found">
+            <div>⚠️ Configuration Error</div>
+            <div style={{ fontSize: "14px", marginTop: "10px" }}>{error}</div>
+          </div>
         ) : data.notFound ? (
           <div className="not-found">Not Found 😒</div>
         ) : (
