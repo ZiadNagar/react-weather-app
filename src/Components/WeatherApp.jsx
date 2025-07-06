@@ -1,106 +1,31 @@
-import sunny from "../assets/images/sunny.png";
-import cloudy from "../assets/images/cloudy.png";
-import rainy from "../assets/images/rainy.png";
-import snowy from "../assets/images/snowy.png";
 import loadingGif from "../assets/images/loading.gif";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import SearchBar from "./SearchBar";
+import WeatherDisplay from "./WeatherDisplay";
+import WeatherData from "./WeatherData";
+import LoadingSpinner from "./LoadingSpinner";
+import NotFound from "./NotFound";
+import useWeatherData from "../hooks/useWeatherData";
+import useFormattedDate from "../hooks/useFormattedDate";
+import { weatherImages, backgroundImages } from "../constants/weatherConstants";
 
 const WeatherApp = () => {
-  const [data, setData] = useState({});
   const [location, setLocation] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
-  const api_key = import.meta.env.VITE_WEATHER_API_KEY;
+  const {
+    data,
+    loading,
+    suggestions,
+    showSuggestions,
+    selectedSuggestionIndex,
+    setShowSuggestions,
+    setSelectedSuggestionIndex,
+    setSuggestions,
+    fetchSuggestions,
+    searchWeatherByCoords,
+    searchWeatherByLocation,
+  } = useWeatherData();
 
-  useEffect(() => {
-    const fetchDefaultWeather = async () => {
-      setLoading(true);
-
-      // Try to get user's current location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            // Success: Use user's coordinates
-            const { latitude, longitude } = position.coords;
-            try {
-              const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=Metric&appid=${api_key}`;
-              const res = await fetch(url);
-              const defaultData = await res.json();
-              setData(defaultData);
-            } catch {
-              // Fallback to Alexandria if API fails
-              await fetchFallbackWeather();
-            }
-            setLoading(false);
-          },
-          async () => {
-            // Error or permission denied: Use fallback location
-            await fetchFallbackWeather();
-            setLoading(false);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000, // 5 minutes
-          }
-        );
-      } else {
-        // Geolocation not supported: Use fallback location
-        await fetchFallbackWeather();
-        setLoading(false);
-      }
-    };
-
-    const fetchFallbackWeather = async () => {
-      try {
-        const defaultLocation = "Alexandria"; // Fallback location
-        const url = `https://api.openweathermap.org/data/2.5/weather?q=${defaultLocation}&units=Metric&appid=${api_key}`;
-        const res = await fetch(url);
-        const defaultData = await res.json();
-        setData(defaultData);
-      } catch {
-        setData({ notFound: true });
-      }
-    };
-
-    fetchDefaultWeather();
-  }, [api_key]);
-
-  const fetchSuggestions = async (query) => {
-    if (query.length < 2) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      setSelectedSuggestionIndex(-1);
-      return;
-    }
-
-    try {
-      const url = `https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${api_key}`;
-      const res = await fetch(url);
-      const suggestionData = await res.json();
-
-      const formattedSuggestions = suggestionData.map((item) => ({
-        name: item.name,
-        country: item.country,
-        state: item.state,
-        lat: item.lat,
-        lon: item.lon,
-        displayName: `${item.name}${item.state ? `, ${item.state}` : ""}, ${
-          item.country
-        }`,
-      }));
-
-      setSuggestions(formattedSuggestions);
-      setShowSuggestions(true);
-      setSelectedSuggestionIndex(-1);
-    } catch {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      setSelectedSuggestionIndex(-1);
-    }
-  };
+  const formattedDate = useFormattedDate();
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -112,49 +37,16 @@ const WeatherApp = () => {
     setLocation(suggestion.displayName);
     setShowSuggestions(false);
     setSuggestions([]);
-
-    setLoading(true);
-    try {
-      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${suggestion.lat}&lon=${suggestion.lon}&units=Metric&appid=${api_key}`;
-      const res = await fetch(url);
-      const weatherData = await res.json();
-
-      if (weatherData.cod !== 200) {
-        setData({ notFound: true });
-      } else {
-        setData(weatherData);
-        setLocation("");
-      }
-    } catch (error) {
-      console.error("Error fetching weather data:", error);
-      setData({ notFound: true });
-    }
-    setLoading(false);
+    await searchWeatherByCoords(suggestion.lat, suggestion.lon);
+    setLocation("");
   };
 
   const search = async () => {
     if (location.trim() !== "") {
-      setLoading(true);
       setShowSuggestions(false);
       setSelectedSuggestionIndex(-1);
-
-      try {
-        const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=Metric&appid=${api_key}`;
-        const res = await fetch(url);
-        const searchData = await res.json();
-
-        if (searchData.cod !== 200) {
-          setData({ notFound: true });
-        } else {
-          setData(searchData);
-          setLocation("");
-        }
-      } catch (error) {
-        console.error("Error fetching weather data:", error);
-        setData({ notFound: true });
-      }
-
-      setLoading(false);
+      await searchWeatherByLocation(location);
+      setLocation("");
     }
   };
 
@@ -165,10 +57,8 @@ const WeatherApp = () => {
         selectedSuggestionIndex >= 0 &&
         selectedSuggestionIndex < suggestions.length
       ) {
-        // Select the highlighted suggestion
         handleSuggestionClick(suggestions[selectedSuggestionIndex]);
       } else {
-        // No suggestion selected, perform regular search
         search();
       }
     } else if (e.key === "Escape") {
@@ -199,63 +89,24 @@ const WeatherApp = () => {
   };
 
   const handleInputBlur = () => {
-    // Delay hiding suggestions to allow click on suggestion
     setTimeout(() => {
       setShowSuggestions(false);
       setSelectedSuggestionIndex(-1);
     }, 200);
   };
 
-  const weatherImages = {
-    Clear: sunny,
-    Clouds: cloudy,
-    Rain: rainy,
-    Snow: snowy,
-    Haze: cloudy,
-    Mist: cloudy,
-  };
-
   const weatherImage = data.weather
     ? weatherImages[data.weather[0].main]
     : null;
-
-  const backgroundImages = {
-    Clear: "linear-gradient(to right, #f3b07c, #fcd283)",
-    Clouds: "linear-gradient(to right, #57d6d4, #71eeec)",
-    Rain: "linear-gradient(to right, #5bc8fb, #80eaff)",
-    Snow: "linear-gradient(to right, #aff2ff, #fff)",
-    Haze: "linear-gradient(to right, #57d6d4, #71eeec)",
-    Mist: "linear-gradient(to right, #57d6d4, #71eeec)",
-  };
-
   const backgroundImage = data.weather
     ? backgroundImages[data.weather[0].main]
     : "linear-gradient(to right, #f3b07c, #fcd283)";
 
-  const currentDate = new Date();
-
-  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-
-  const dayOfWeek = daysOfWeek[currentDate.getDay()];
-  const month = months[currentDate.getMonth()];
-  const dayOfMonth = currentDate.getDate();
-
-  const formattedDate = `${dayOfWeek}, ${dayOfMonth} ${month}`;
+  const locationDisplay = data.notFound
+    ? "No location found"
+    : data.name && data.sys
+    ? `${data.name}, ${data.sys.country}`
+    : "Loading...";
 
   return (
     <div className="container" style={{ backgroundImage }}>
@@ -268,80 +119,35 @@ const WeatherApp = () => {
               : null,
         }}
       >
-        <div className="search">
-          <div className="search-top">
-            <i className="fa-solid fa-location-dot"></i>
-            <div className="location">
-              {data.notFound
-                ? "No location found"
-                : data.name && data.sys
-                ? `${data.name}, ${data.sys.country}`
-                : "Loading..."}
-            </div>
-          </div>
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Enter Location"
-              value={location}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              onFocus={handleInputFocus}
-              onBlur={handleInputBlur}
-            />
-            <i className="fa-solid fa-magnifying-glass" onClick={search}></i>
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="suggestions-dropdown">
-                {suggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className={`suggestion-item ${
-                      index === selectedSuggestionIndex ? "selected" : ""
-                    }`}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                  >
-                    <i className="fa-solid fa-location-dot"></i>
-                    <span>{suggestion.displayName}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <SearchBar
+          location={location}
+          onLocationChange={handleInputChange}
+          onSearch={search}
+          suggestions={suggestions}
+          showSuggestions={showSuggestions}
+          selectedSuggestionIndex={selectedSuggestionIndex}
+          onSuggestionClick={handleSuggestionClick}
+          onKeyDown={handleKeyDown}
+          onInputFocus={handleInputFocus}
+          onInputBlur={handleInputBlur}
+          locationDisplay={locationDisplay}
+        />
         {loading ? (
-          <img className="loader" src={loadingGif} alt="loading" />
+          <LoadingSpinner loadingGif={loadingGif} />
         ) : data.notFound ? (
-          <div className="not-found">Not Found 😒</div>
+          <NotFound />
         ) : (
           <>
-            <div className="weather">
-              <img src={weatherImage} alt="sunny" />
-              <div className="weather-type">
-                {data.weather ? data.weather[0].main : null}
-              </div>
-              <div className="temp">
-                {data.main ? `${Math.floor(data.main.temp)}°` : null}
-              </div>
-            </div>
-            <div className="weather-date">
-              <p>{formattedDate}</p>
-            </div>
-            <div className="weather-data">
-              <div className="humidity">
-                <div className="data-name">Humidity</div>
-                <i className="fa-solid fa-droplet"></i>
-                <div className="data">
-                  {data.main ? data.main.humidity : null}%
-                </div>
-              </div>
-              <div className="wind">
-                <div className="data-name">Wind</div>
-                <i className="fa-solid fa-wind"></i>
-                <div className="data">
-                  {data.wind ? data.wind.speed : null} km/h
-                </div>
-              </div>
-            </div>
+            <WeatherDisplay
+              weatherImage={weatherImage}
+              weatherType={data.weather ? data.weather[0].main : null}
+              temperature={data.main ? `${Math.floor(data.main.temp)}°` : null}
+              currentDate={formattedDate}
+            />
+            <WeatherData
+              humidity={data.main ? data.main.humidity : null}
+              windSpeed={data.wind ? data.wind.speed : null}
+            />
           </>
         )}
       </div>
